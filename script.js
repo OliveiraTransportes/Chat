@@ -176,14 +176,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function sendImage(file) {
-        const validImageTypes = ["image/png", "image/jpeg", "image/jpg"];
-        const fileType = file.type;
-
-        if (!validImageTypes.includes(fileType)) {
-            displayMessage("⚠️ Formato de imagem inválido. Envie uma imagem PNG ou JPEG.", "bot-message");
-            return;
-        }
-
         const envioValido =
             (currentContext === "embarque" && lastOptionSelected === "3") ||
             (currentContext === "desembarque" && lastOptionSelected === "2");
@@ -208,7 +200,7 @@ document.addEventListener("DOMContentLoaded", function () {
             messageDiv.appendChild(imgContainer);
             chatBox.appendChild(messageDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
-            
+
             if (currentContext === "embarque" && lastOptionSelected === "3") {
                 enviarImagemParaFormsubmit(file, cpf, "embarque");
             } else if (currentContext === "desembarque" && lastOptionSelected === "2") {
