@@ -176,47 +176,47 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function sendImage(file) {
-    const validImageTypes = ["image/png", "image/jpeg", "image/jpg"];
-    const fileType = file.type;
+        const validImageTypes = ["image/png", "image/jpeg", "image/jpg"];
+        const fileType = file.type;
 
-    if (!validImageTypes.includes(fileType)) {
-        displayMessage("⚠️ Formato de imagem inválido. Envie uma imagem PNG ou JPEG.", "bot-message");
-        return;
-    }
-
-    const envioValido =
-        (currentContext === "embarque" && lastOptionSelected === "3") ||
-        (currentContext === "desembarque" && lastOptionSelected === "2");
-
-    if (!envioValido) {
-        displayMessage("⚠️ Formato inválido.", "bot-message");
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = function () {
-        const messageDiv = document.createElement("div");
-        messageDiv.classList.add("message", "user-message");
-
-        const imgContainer = document.createElement("div");
-        imgContainer.classList.add("image-container");
-
-        const img = document.createElement("img");
-        img.src = reader.result;
-
-        imgContainer.appendChild(img);
-        messageDiv.appendChild(imgContainer);
-        chatBox.appendChild(messageDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
-        
-        if (currentContext === "embarque" && lastOptionSelected === "3") {
-            enviarImagemParaFormsubmit(file, cpf, "embarque");
-        } else if (currentContext === "desembarque" && lastOptionSelected === "2") {
-            enviarImagemParaFormsubmit(file, cpf, "desembarque");
+        if (!validImageTypes.includes(fileType)) {
+            displayMessage("⚠️ Formato de imagem inválido. Envie uma imagem PNG ou JPEG.", "bot-message");
+            return;
         }
-    };
-    reader.readAsDataURL(file);
-}
+
+        const envioValido =
+            (currentContext === "embarque" && lastOptionSelected === "3") ||
+            (currentContext === "desembarque" && lastOptionSelected === "2");
+
+        if (!envioValido) {
+            displayMessage("⚠️ Formato inválido.", "bot-message");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = function () {
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message", "user-message");
+
+            const imgContainer = document.createElement("div");
+            imgContainer.classList.add("image-container");
+
+            const img = document.createElement("img");
+            img.src = reader.result;
+
+            imgContainer.appendChild(img);
+            messageDiv.appendChild(imgContainer);
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            
+            if (currentContext === "embarque" && lastOptionSelected === "3") {
+                enviarImagemParaFormsubmit(file, cpf, "embarque");
+            } else if (currentContext === "desembarque" && lastOptionSelected === "2") {
+                enviarImagemParaFormsubmit(file, cpf, "desembarque");
+            }
+        };
+        reader.readAsDataURL(file);
+    }
 
     if (fileInput && attachButton) {
         attachButton.addEventListener("click", () => fileInput.click());
@@ -298,6 +298,38 @@ document.addEventListener("DOMContentLoaded", function () {
         );
     }
 
+    function displayMenu(context) {
+        currentContext = context;
+        
+        if (context === "embarque") {
+            displayMessage(
+                "1️⃣ Local e responsável\n2️⃣ Tipo de carga\n3️⃣ Enviar foto da carga\n4️⃣ Registrar KM inicial\n0️⃣ Voltar",
+                "bot-message"
+            );
+        } else if (context === "rota") {
+            displayMessage(
+                "1️⃣ Ver rota\n2️⃣ Paradas programadas\n3️⃣ Desvios\n4️⃣ Observações\n5️⃣ Custos\n0️⃣ Voltar",
+                "bot-message"
+            );
+        } else if (context === "desembarque") {
+            displayMessage(
+                "1️⃣ Local e responsável\n2️⃣ Enviar foto da carga\n3️⃣ Registrar KM final\n0️⃣ Voltar",
+                "bot-message"
+            );
+        } else if (context === "contato") {
+            displayMessage(
+                "1️⃣ Emergência\n2️⃣ Supervisor\n3️⃣ Ouvidoria\n0️⃣ Voltar",
+                "bot-message"
+            );
+        }
+    }
+
+    function displayMenuAfterAction() {
+        setTimeout(() => {
+            displayMenu(currentContext);
+        }, 1000);
+    }
+
     function handleMainMenu(message) {
         if (message === "0") {
             lastOptionSelected = "";
@@ -335,92 +367,93 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     
     function handleContextResponses(message) {
-    const user = usersData[cpf];
-    const isNumber = !isNaN(Number(message));
-
-    if (message === "0") {
-        currentContext = "";
-        lastOptionSelected = "";
-        displayMainMenu();
-        return;
-    }
-
-    if (currentContext === "embarque" && lastOptionSelected === "4" && isNumber) {
-        displayMessage("✅ KM inicial registrado: " + message, "bot-message");
-        message1 = "KM inicial: " + message;
-        enviar_planilha(cpf, message1);
-        lastOptionSelected = "";
-        setTimeout(displayMenuAfterAction, 1500);
-        return;
-    }
-
-    if (currentContext === "desembarque" && lastOptionSelected === "3" && isNumber) {
-        displayMessage("✅ KM final registrado: " + message, "bot-message");
-        message2 = "KM final: " + message;
-        enviar_planilha(cpf, message2);
-        lastOptionSelected = "";
-        setTimeout(displayMenuAfterAction, 1500);
-        return;
-    }
-
-    if (currentContext === "rota" && lastOptionSelected === "4") {
-        displayMessage("✅ Observações registradas: " + message, "bot-message");
-        message3 = "Observações: " + message;
-        enviar_planilha(cpf, message3);
-        lastOptionSelected = "";
-        setTimeout(displayMenuAfterAction, 1500);
-        return;
-    }
-
-    if (currentContext === "rota" && lastOptionSelected === "5" && isNumber) {
-        displayMessage("✅ Custos registrados: R$ " + message, "bot-message");
-        message4 = "Custos: R$ " + message;
-        enviar_planilha(cpf, message4);
-        lastOptionSelected = "";
-        setTimeout(displayMenuAfterAction, 1500);
-        return;
-    }
-
-    lastOptionSelected = message;
-
-    if (currentContext === "embarque") {
-        const responses = {
-            "1": `Local: ${user.embarqueLocal}\nResponsável: ${user.embarqueResponsavel}`,
-            "2": `Tipo de carga: ${user.tipoCarga}`,
-            "3": "Envie a foto da carga no embarque:",
-            "4": "Digite o KM inicial:"
-        };
-        displayMessage(responses[message] || "Opção inválida.", "bot-message");
-
-    } else if (currentContext === "rota") {
-        const responses = {
-            "1": "Instale o Waze, disponível para Android e IOS, ou acesse: https://www.waze.com/pt-BR/live-map/",
-            "2": "Paradas: " + user.paradasProgramadas,
-            "3": "Instale o Waze, disponível para Android e IOS, ou acesse: https://www.waze.com/pt-BR/live-map/",
-            "4": "Digite suas observações:",
-            "5": "Digite os custos da viagem:"
-        };
-        displayMessage(responses[message] || "Opção inválida.", "bot-message");
-
-    } else if (currentContext === "desembarque") {
-        const responses = {
-            "1": `Local: ${user.desembarqueLocal}\nResponsável: ${user.desembarqueResponsavel}`,
-            "2": "Envie a foto da carga no desembarque:",
-            "3": "Digite o KM final:"
-        };
-        displayMessage(responses[message] || "Opção inválida.", "bot-message");
-
-    } else if (currentContext === "contato") {
-        const responses = {
-            "1": "Emergência 24h:\n192\nSOS Estradas:\nhttps://postocidadedemarilia.com.br/telefone-de-emergencia-das-rodovias-guia/",
-            "2": "Supervisor Otávio: (34) 9 9894-2493",
-            "3": "Ouvidoria: ouvidoria@oliveiratransportes.com.br"
-        };
-
-        displayMessage(responses[message] || "⚠️ Opção inválida.", "bot-message");
+        const user = usersData[cpf];
+        const isNumber = !isNaN(Number(message));
 
         if (message === "0") {
-            setTimeout(displayMenuAfterAction, 1000);
+            currentContext = "";
+            lastOptionSelected = "";
+            displayMainMenu();
+            return;
+        }
+
+        if (currentContext === "embarque" && lastOptionSelected === "4" && isNumber) {
+            displayMessage("✅ KM inicial registrado: " + message, "bot-message");
+            const message1 = "KM inicial: " + message;
+            enviar_planilha(cpf, message1);
+            lastOptionSelected = "";
+            setTimeout(displayMenuAfterAction, 1500);
+            return;
+        }
+
+        if (currentContext === "desembarque" && lastOptionSelected === "3" && isNumber) {
+            displayMessage("✅ KM final registrado: " + message, "bot-message");
+            const message2 = "KM final: " + message;
+            enviar_planilha(cpf, message2);
+            lastOptionSelected = "";
+            setTimeout(displayMenuAfterAction, 1500);
+            return;
+        }
+
+        if (currentContext === "rota" && lastOptionSelected === "4") {
+            displayMessage("✅ Observações registradas: " + message, "bot-message");
+            const message3 = "Observações: " + message;
+            enviar_planilha(cpf, message3);
+            lastOptionSelected = "";
+            setTimeout(displayMenuAfterAction, 1500);
+            return;
+        }
+
+        if (currentContext === "rota" && lastOptionSelected === "5" && isNumber) {
+            displayMessage("✅ Custos registrados: R$ " + message, "bot-message");
+            const message4 = "Custos: R$ " + message;
+            enviar_planilha(cpf, message4);
+            lastOptionSelected = "";
+            setTimeout(displayMenuAfterAction, 1500);
+            return;
+        }
+
+        lastOptionSelected = message;
+
+        if (currentContext === "embarque") {
+            const responses = {
+                "1": `Local: ${user.embarqueLocal}\nResponsável: ${user.embarqueResponsavel}`,
+                "2": `Tipo de carga: ${user.tipoCarga}`,
+                "3": "Envie a foto da carga no embarque:",
+                "4": "Digite o KM inicial:"
+            };
+            displayMessage(responses[message] || "Opção inválida.", "bot-message");
+
+        } else if (currentContext === "rota") {
+            const responses = {
+                "1": "Instale o Waze, disponível para Android e IOS, ou acesse: https://www.waze.com/pt-BR/live-map/",
+                "2": "Paradas: " + user.paradasProgramadas,
+                "3": "Instale o Waze, disponível para Android e IOS, ou acesse: https://www.waze.com/pt-BR/live-map/",
+                "4": "Digite suas observações:",
+                "5": "Digite os custos da viagem:"
+            };
+            displayMessage(responses[message] || "Opção inválida.", "bot-message");
+
+        } else if (currentContext === "desembarque") {
+            const responses = {
+                "1": `Local: ${user.desembarqueLocal}\nResponsável: ${user.desembarqueResponsavel}`,
+                "2": "Envie a foto da carga no desembarque:",
+                "3": "Digite o KM final:"
+            };
+            displayMessage(responses[message] || "Opção inválida.", "bot-message");
+
+        } else if (currentContext === "contato") {
+            const responses = {
+                "1": "Emergência 24h:\n192\nSOS Estradas:\nhttps://postocidadedemarilia.com.br/telefone-de-emergencia-das-rodovias-guia/",
+                "2": "Supervisor Otávio: (34) 9 9894-2493",
+                "3": "Ouvidoria: ouvidoria@oliveiratransportes.com.br"
+            };
+
+            displayMessage(responses[message] || "⚠️ Opção inválida.", "bot-message");
+
+            if (message === "0") {
+                setTimeout(displayMenuAfterAction, 1000);
+            }
         }
     }
-}
+});
