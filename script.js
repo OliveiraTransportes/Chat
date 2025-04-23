@@ -335,107 +335,92 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     
     function handleContextResponses(message) {
-        const user = usersData[cpf];
-        const isNumber = !isNaN(Number(message));
+    const user = usersData[cpf];
+    const isNumber = !isNaN(Number(message));
+
+    if (message === "0") {
+        currentContext = "";
+        lastOptionSelected = "";
+        displayMainMenu();
+        return;
+    }
+
+    if (currentContext === "embarque" && lastOptionSelected === "4" && isNumber) {
+        displayMessage("✅ KM inicial registrado: " + message, "bot-message");
+        message1 = "KM inicial: " + message;
+        enviar_planilha(cpf, message1);
+        lastOptionSelected = "";
+        setTimeout(displayMenuAfterAction, 1500);
+        return;
+    }
+
+    if (currentContext === "desembarque" && lastOptionSelected === "3" && isNumber) {
+        displayMessage("✅ KM final registrado: " + message, "bot-message");
+        message2 = "KM final: " + message;
+        enviar_planilha(cpf, message2);
+        lastOptionSelected = "";
+        setTimeout(displayMenuAfterAction, 1500);
+        return;
+    }
+
+    if (currentContext === "rota" && lastOptionSelected === "4") {
+        displayMessage("✅ Observações registradas: " + message, "bot-message");
+        message3 = "Observações: " + message;
+        enviar_planilha(cpf, message3);
+        lastOptionSelected = "";
+        setTimeout(displayMenuAfterAction, 1500);
+        return;
+    }
+
+    if (currentContext === "rota" && lastOptionSelected === "5" && isNumber) {
+        displayMessage("✅ Custos registrados: R$ " + message, "bot-message");
+        message4 = "Custos: R$ " + message;
+        enviar_planilha(cpf, message4);
+        lastOptionSelected = "";
+        setTimeout(displayMenuAfterAction, 1500);
+        return;
+    }
+
+    lastOptionSelected = message;
+
+    if (currentContext === "embarque") {
+        const responses = {
+            "1": `Local: ${user.embarqueLocal}\nResponsável: ${user.embarqueResponsavel}`,
+            "2": `Tipo de carga: ${user.tipoCarga}`,
+            "3": "Envie a foto da carga no embarque:",
+            "4": "Digite o KM inicial:"
+        };
+        displayMessage(responses[message] || "Opção inválida.", "bot-message");
+
+    } else if (currentContext === "rota") {
+        const responses = {
+            "1": "Instale o Waze, disponível para Android e IOS, ou acesse: https://www.waze.com/pt-BR/live-map/",
+            "2": "Paradas: " + user.paradasProgramadas,
+            "3": "Instale o Waze, disponível para Android e IOS, ou acesse: https://www.waze.com/pt-BR/live-map/",
+            "4": "Digite suas observações:",
+            "5": "Digite os custos da viagem:"
+        };
+        displayMessage(responses[message] || "Opção inválida.", "bot-message");
+
+    } else if (currentContext === "desembarque") {
+        const responses = {
+            "1": `Local: ${user.desembarqueLocal}\nResponsável: ${user.desembarqueResponsavel}`,
+            "2": "Envie a foto da carga no desembarque:",
+            "3": "Digite o KM final:"
+        };
+        displayMessage(responses[message] || "Opção inválida.", "bot-message");
+
+    } else if (currentContext === "contato") {
+        const responses = {
+            "1": "Emergência 24h:\n192\nSOS Estradas:\nhttps://postocidadedemarilia.com.br/telefone-de-emergencia-das-rodovias-guia/",
+            "2": "Supervisor Otávio: (34) 9 9894-2493",
+            "3": "Ouvidoria: ouvidoria@oliveiratransportes.com.br"
+        };
+
+        displayMessage(responses[message] || "⚠️ Opção inválida.", "bot-message");
 
         if (message === "0") {
-            currentContext = "";
-            lastOptionSelected = "";
-            displayMainMenu();
-            return;
-        }
-
-        if (currentContext === "embarque" && lastOptionSelected === "4" && isNumber) {
-            displayMessage("✅ KM inicial registrado: " + message, "bot-message");
-            message1 = "KM inicial: " + message;
-            enviar_planilha(cpf, message1);
-            lastOptionSelected = "";
-            setTimeout(displayMenuAfterAction, 1500);
-            return;
-        }
-
-        if (currentContext === "desembarque" && lastOptionSelected === "3" && isNumber) {
-            displayMessage("✅ KM final registrado: " + message, "bot-message");
-            message2 = "KM final: " + message;
-            enviar_planilha(cpf, message2);
-            lastOptionSelected = "";
-            setTimeout(displayMenuAfterAction, 1500);
-            return;
-        }
-
-        if (currentContext === "rota" && lastOptionSelected === "4") {
-            displayMessage("✅ Observações registradas: " + message, "bot-message");
-            message3 = "Observações: " + message;
-            enviar_planilha(cpf, message3);
-            lastOptionSelected = "";
-            setTimeout(displayMenuAfterAction, 1500);
-            return;
-        }
-
-        if (currentContext === "rota" && lastOptionSelected === "5" && isNumber) {
-            displayMessage("✅ Custos registrados: R$ " + message, "bot-message");
-            message4 = "Custos: R$ " + message;
-            enviar_planilha(cpf, message4);
-            lastOptionSelected = "";
-            setTimeout(displayMenuAfterAction, 1500);
-            return;
-        }
-
-        lastOptionSelected = message;
-
-                if (currentContext === "embarque") {
-            const responses = {
-                "1": `Local: ${user.embarqueLocal}\nResponsável: ${user.embarqueResponsavel}`,
-                "2": `Tipo de carga: ${user.tipoCarga}`,
-                "3": "Envie a foto da carga no embarque:",
-                "4": "Digite o KM inicial:"
-            };
-            displayMessage(responses[message] || "Opção inválida.", "bot-message");
-
-        } else if (currentContext === "rota") {
-            const responses = {
-                "1": "Instale o Waze, disponível para Android e IOS, ou acesse: https://www.waze.com/pt-BR/live-map/",
-                "2": "Paradas: " + user.paradasProgramadas,
-                "3": "Instale o Waze, disponível para Android e IOS, ou acesse: https://www.waze.com/pt-BR/live-map/",
-                "4": "Digite suas observações:",
-                "5": "Digite os custos da viagem:"
-            };
-            displayMessage(responses[message] || "Opção inválida.", "bot-message");
-
-        } else if (currentContext === "desembarque") {
-            const responses = {
-                "1": `Local: ${user.desembarqueLocal}\nResponsável: ${user.desembarqueResponsavel}`,
-                "2": "Envie a foto da carga no desembarque:",
-                "3": "Digite o KM final:"
-            };
-            displayMessage(responses[message] || "Opção inválida.", "bot-message");
-
-        } else if (currentContext === "contato") {
-            const responses = {
-                "1": "Emergência 24h:\n192\nSOS Estradas:\nhttps://postocidadedemarilia.com.br/telefone-de-emergencia-das-rodovias-guia/",
-                "2": "Supervisor Otávio: (34) 9 9894-2493",
-                "3": "Ouvidoria: ouvidoria@oliveiratransportes.com.br"
-            };
-            displayMessage(responses[message] || "⚠️ Opção inválida.", "bot-message");
             setTimeout(displayMenuAfterAction, 1000);
         }
     }
-
-    function displayMenu(contexto) {
-        const menus = {
-            "embarque": `Embarque:\n1️⃣ Local e responsável\n2️⃣ Tipo de carga\n3️⃣ Enviar foto da carga\n4️⃣ KM inicial\n0️⃣ Voltar ao menu principal`,
-            "rota": `Rota:\n1️⃣ Abrir mapa\n2️⃣ Ver paradas\n3️⃣ Ver rota\n4️⃣ Registrar observações\n5️⃣ Registrar custos\n0️⃣ Voltar ao menu principal`,
-            "desembarque": `Desembarque:\n1️⃣ Local e responsável\n2️⃣ Enviar foto da carga\n3️⃣ KM final\n0️⃣ Voltar ao menu principal`,
-            "contato": `Contatos:\n1️⃣ Emergência\n2️⃣ Supervisor\n3️⃣ Ouvidoria\n0️⃣ Voltar ao menu principal`
-        };
-        displayMessage(menus[contexto] || "⚠️ Menu não disponível.", "bot-message");
-    }
-
-    function displayMenuAfterAction() {
-        if (currentContext) {
-            displayMenu(currentContext);
-        } else {
-            displayMainMenu();
-        }
-    }
-});
+}
