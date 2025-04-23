@@ -245,44 +245,6 @@ body {
    animation: flash 1s ease-in-out;
 }
 
-#installBtn {
-   position: fixed;
-   bottom: 20px;
-   left: 50%;
-   transform: translateX(-50%);
-   background-color: #25D366;
-   color: white;
-   border: none;
-   border-radius: 24px;
-   padding: 12px 24px;
-   font-weight: 500;
-   box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
-   cursor: pointer;
-   display: none;
-   z-index: 1000;
-   transition: background-color 0.3s, transform 0.2s;
-}
-
-#installBtn:hover {
-   background-color: #128C7E;
-}
-
-#installBtn:active {
-   transform: translateX(-50%) scale(0.97);
-}
-
-@media all and (display-mode: standalone) {
-   body {
-      padding: 0;
-   }
-   
-   .chat-container {
-      height: 100vh;
-      max-width: 100%;
-      border-radius: 0;
-   }
-}
-
 @media (max-width: 480px) {
    body {
       padding: 0;
