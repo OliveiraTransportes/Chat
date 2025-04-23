@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (navigator.onLine) carregarMotoristas();
     window.addEventListener('online', carregarMotoristas);
 
-     function verificarStatus() {
+    function verificarStatus() {
         const statusDot = document.getElementById('status-dot');
         const statusText = document.getElementById('status-text');
         const statusIndicator = document.getElementById('status-indicator');
@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", function () {
     window.addEventListener('offline', verificarStatus);
     verificarStatus();
 
-     function enviarParaFormsubmit(data, contexto) {
+    function enviarParaFormsubmit(data, contexto) {
         const formData = new FormData();
         for (const key in data) {
             formData.append(key, data[key]);
@@ -185,7 +185,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-   const reader = new FileReader();
+        const reader = new FileReader();
         reader.onloadend = function () {
             const messageDiv = document.createElement("div");
             messageDiv.classList.add("message", "user-message");
@@ -231,15 +231,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function atualizarDadosDoMotorista() {
-        const ultimoCPF = localStorage.getItem("ultimoCPF");
-        if (!ultimoCPF || !navigator.onLine) return;
-    
-        fetch('https://api.sheety.co/7a6b39da1af36e7ace5d2c61d043fcdf/chatMotoristas/motoristas')
+        if (!cpf || !navigator.onLine) return;
+
+        fetch(sheetUrl)
             .then(response => response.json())
             .then(data => {
-                const atualizado = data.motoristas.find(m => m.cpf === ultimoCPF);
+                const atualizado = data.motoristas.find(m => m.cpf === cpf);
                 if (atualizado) {
-                    usersData[ultimoCPF] = {
+                    usersData[cpf] = {
                         nome: atualizado.nome,
                         tipoCarga: atualizado.tipoCarga,
                         embarqueLocal: atualizado.embarqueLocal,
@@ -248,14 +247,14 @@ document.addEventListener("DOMContentLoaded", function () {
                         desembarqueResponsavel: atualizado.desembarqueResponsavel,
                         paradasProgramadas: atualizado.paradasProgramadas
                     };
-                    console.log("✅ Dados atualizados para CPF " + ultimoCPF);
+                    console.log("✅ Dados atualizados para CPF " + cpf);
                 }
             })
             .catch(error => {
                 console.error("Erro ao atualizar dados do motorista:", error);
             });
     }
-    
+
     function enviar_planilha(cpf, message) {
         if (!navigator.onLine) return;
 
@@ -326,6 +325,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 displayMessage("Opção inválida. Escolha de 1 a 5.", "bot-message");
         }
     }
+    
     function handleContextResponses(message) {
         const user = usersData[cpf];
         const isNumber = !isNaN(Number(message));
