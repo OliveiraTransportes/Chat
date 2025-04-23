@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (window.chatInitialized) return;
     window.chatInitialized = true;
 
-    let cpf = localStorage.getItem("ultimoCPF") || "";
+    let cpf = "";
     let chatBox = document.getElementById("chat-box");
     let userInput = document.getElementById("user-input");
     let fileInput = document.getElementById("file-input");
@@ -14,9 +14,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let lastOptionSelected = "";
     let usersData = {};
 
-    // Carrega dados da planilha Sheety
     function carregarMotoristas() {
-        fetch('https://api.sheety.co/7a6b39da1af36e7ace5d2c61d043fcdf/chatMotoristas/motoristas')
+        fetch(sheetUrl)
             .then(response => response.json())
             .then(data => {
                 data.motoristas.forEach(entry => {
@@ -32,7 +31,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
 
                 if (cpf && usersData[cpf]) {
-                    restoreMessagesFromLocalStorage(cpf);
                     displayMainMenu();
                 }
             })
@@ -44,34 +42,19 @@ document.addEventListener("DOMContentLoaded", function () {
     if (navigator.onLine) carregarMotoristas();
     window.addEventListener('online', carregarMotoristas);
 
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/service-worker.js')
-            .then(registration => {
-                window.addEventListener('online', () => {
-                    registration.update();
-                });
-
-                setInterval(() => {
-                    if (navigator.onLine) {
-                        registration.update();
-                    }
-                }, 3600000);
-
-                navigator.serviceWorker.addEventListener('message', event => {
-                    if (event.data.type === 'SW_UPDATED') {
-                        window.location.reload();
-                    }
-                });
-
-                registration.update();
-            });
-    }
-
-    function verificarStatus() {
+     function verificarStatus() {
         const statusDot = document.getElementById('status-dot');
         const statusText = document.getElementById('status-text');
+        const statusIndicator = document.getElementById('status-indicator');
 
-        if (navigator.onLine) {
+        if (!statusDot || !statusText) return;
+
+        const isOnline = navigator.onLine;
+        if (statusIndicator) {
+            statusIndicator.style.display = 'flex';
+        }
+
+        if (isOnline) {
             statusDot.classList.remove('offline');
             statusDot.classList.add('online');
             statusText.textContent = 'Você está online';
@@ -80,11 +63,74 @@ document.addEventListener("DOMContentLoaded", function () {
             statusDot.classList.add('offline');
             statusText.textContent = 'Você está offline';
         }
+
+        if (statusIndicator) {
+            statusIndicator.classList.add('status-updated');
+            setTimeout(() => {
+                statusIndicator.classList.remove('status-updated');
+            }, 1000);
+        }
     }
 
-    setTimeout(verificarStatus, 1000);
     window.addEventListener('online', verificarStatus);
     window.addEventListener('offline', verificarStatus);
+    verificarStatus();
+
+     function enviarParaFormsubmit(data, contexto) {
+        const formData = new FormData();
+        for (const key in data) {
+            formData.append(key, data[key]);
+        }
+        formData.append("_subject", `📌 Atualizações de ${contexto} - CPF ${data.cpf}`);
+        formData.append("_captcha", "false");
+
+        fetch("https://formsubmit.co/transporte.oliveira583@gmail.com", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            displayMessage("✅ Informações enviadas!", "bot-message");
+            lastOptionSelected = "";
+            displayMenuAfterAction();
+        })
+        .catch(error => {
+            console.error(error);
+            displayMessage("❌ Erro ao enviar informações. Tente novamente mais tarde.", "bot-message");
+            setTimeout(() => {
+                displayMenuAfterAction();
+            }, 1500);
+        });
+    }
+
+    function enviarImagemParaFormsubmit(file, cpf, contexto) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("cpf", cpf);
+        formData.append("_subject", `📸 Foto de ${contexto} enviada - CPF ${cpf}`);
+        formData.append("_captcha", "false");
+
+        fetch("https://formsubmit.co/transporte.oliveira583@gmail.com", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                displayMessage("✅ Foto enviada!", "bot-message");
+                lastOptionSelected = "";
+                displayMenuAfterAction();
+            } else {
+                throw new Error("Erro ao enviar foto");
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            displayMessage("❌ Erro ao enviar foto. Tente novamente mais tarde.", "bot-message");
+            setTimeout(() => {
+                displayMenuAfterAction();
+            }, 1500);
+        });
+    }
 
     function sendMessage() {
         const message = userInput.value.trim();
@@ -127,35 +173,60 @@ document.addEventListener("DOMContentLoaded", function () {
         messageDiv.innerHTML = content.replace(/\n/g, "<br>");
         chatBox.appendChild(messageDiv);
         chatBox.scrollTop = chatBox.scrollHeight;
+    }
 
-        if (cpf) {
-            saveMessageToLocalStorage(cpf, content, className);
+    function sendImage(file) {
+        const envioValido =
+            (currentContext === "embarque" && lastOptionSelected === "3") ||
+            (currentContext === "desembarque" && lastOptionSelected === "2");
+
+        if (!envioValido) {
+            displayMessage("⚠️ Formato inválido.", "bot-message");
+            return;
         }
+
+   const reader = new FileReader();
+        reader.onloadend = function () {
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message", "user-message");
+
+            const imgContainer = document.createElement("div");
+            imgContainer.classList.add("image-container");
+
+            const img = document.createElement("img");
+            img.src = reader.result;
+
+            imgContainer.appendChild(img);
+            messageDiv.appendChild(imgContainer);
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            if (currentContext === "embarque" && lastOptionSelected === "3") {
+                enviarImagemParaFormsubmit(file, cpf, "embarque");
+            } else if (currentContext === "desembarque" && lastOptionSelected === "2") {
+                enviarImagemParaFormsubmit(file, cpf, "desembarque");
+            }
+        };
+        reader.readAsDataURL(file);
     }
 
-    function saveMessageToLocalStorage(cpf, content, className) {
-        let history = JSON.parse(localStorage.getItem("chat_" + cpf)) || [];
-        history.push({ content, className });
-        localStorage.setItem("chat_" + cpf, JSON.stringify(history));
-    }
-
-    function restoreMessagesFromLocalStorage(cpf) {
-        const history = JSON.parse(localStorage.getItem("chat_" + cpf)) || [];
-        history.forEach(entry => {
-            displayMessage(entry.content, entry.className);
+    if (fileInput && attachButton) {
+        attachButton.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", () => {
+            if (fileInput.files.length > 0) {
+                sendImage(fileInput.files[0]);
+                fileInput.value = "";
+            }
         });
     }
 
     function handleCPFInput(message) {
-        cpf = message.replace(/\D/g, "");
-        localStorage.setItem("ultimoCPF", cpf);
-
-        if (usersData[cpf]) {
-            restoreMessagesFromLocalStorage(cpf);
+        const inputCPF = message.replace(/\D/g, "");
+        if (usersData[inputCPF]) {
+            cpf = inputCPF;
             displayMainMenu();
         } else {
             displayMessage("CPF não encontrado.", "bot-message");
-            cpf = "";
         }
     }
 
@@ -185,100 +256,37 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     }
     
-    function enviar_planilha(cpf, message){
-        // Enviar para aba 'mensagens' na planilha
-        console.log(cpf);
-        if (navigator.onLine) {
-            const user = usersData[cpf];
-            const payload = {
-                mensagem: {
-                    nome: user.nome,
-                    conteudo: message,
-                    tipo: "motorista",
-                    timestamp: new Date().toLocaleString("pt-BR")
-                }
+    function enviar_planilha(cpf, message) {
+        if (!navigator.onLine) return;
+
+        const user = usersData[cpf];
+        const payload = {
+            mensagem: {
+                nome: user.nome,
+                conteudo: message,
+                tipo: "motorista",
+                timestamp: new Date().toLocaleString("pt-BR")
             }
-            fetch('https://api.sheety.co/7a6b39da1af36e7ace5d2c61d043fcdf/chatMotoristas/mensagem', {
+        };
+
+        fetch('https://api.sheety.co/7a6b39da1af36e7ace5d2c61d043fcdf/chatMotoristas/mensagem', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
-            })
+        })
             .then(res => res.json())
             .then(data => {
                 console.log("✅ Mensagem enviada para planilha:", data);
             })
-            .catch(async (err) => {
-                const errorBody = await err.json?.();
-                console.error("❌ Erro ao enviar mensagem para a planilha:", errorBody || err);
-              });
-              
-              
-        } else {
-            // Guarda na fila offline
-            let fila = JSON.parse(localStorage.getItem("filaMensagensOffline") || "[]");
-            fila.push({
-                nome: user.nome,
-                conteudo: message,
-                tipo: "motorista",
-                timestamp: new Date().toISOString()
+            .catch(err => {
+                console.error("❌ Erro ao enviar mensagem:", err);
             });
-            localStorage.setItem("filaMensagensOffline", JSON.stringify(fila));
-        }
-    }
-
-    attachButton.addEventListener("click", () => {
-        fileInput.click();
-    });
-    
-    fileInput.addEventListener("change", () => {
-        const file = fileInput.files[0];
-        if (file && file.type.startsWith("image/")) {
-            displayMessage("📤 Enviando imagem...", "user-message");
-    
-            uploadImageToImgur(file, (err, url) => {
-                if (err) {
-                    displayMessage("❌ Erro ao enviar imagem.", "bot-message");
-                    return;
-                }
-    
-                displayMessage(`<a href="${url}" target="_blank">📸 Ver imagem enviada</a>`, "user-message");
-                saveMessageToLocalStorage(cpf, `<a href="${url}" target="_blank">📸 Ver imagem enviada</a>`, "user-message");
-    
-                // Envia o link da imagem para a planilha
-                enviar_planilha(cpf, `Imagem enviada: ${url}`);
-            });
-        }
-    });
-
-
-    function uploadImageToImgur(file, callback) {
-        const clientId = "921ef7070dda201";
-        const formData = new FormData();
-        formData.append("image", file);
-    
-        fetch("https://api.imgur.com/3/image", {
-            method: "POST",
-            headers: {
-                Authorization: `Client-ID ${clientId}`,
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const imageUrl = data.data.link;
-                callback(null, imageUrl);
-            } else {
-                callback("Erro ao enviar imagem");
-            }
-        })
-        .catch(err => callback(err));
     }
 
     function displayMainMenu() {
         const user = usersData[cpf];
         displayMessage(
-            `Olá, ${user.nome}! Escolha uma opção:\n1️⃣ Embarque\n2️⃣ Rota\n3️⃣ Desembarque\n4️⃣ Pós-viagem\n5️⃣ Contatos úteis\n6️⃣ Trocar motorista`,
+            `Olá, ${user.nome}! Escolha uma opção:\n1️⃣ Embarque\n2️⃣ Rota\n3️⃣ Desembarque\n4️⃣ Pós-viagem\n5️⃣ Contatos úteis`,
             "bot-message"
         );
     }
@@ -314,17 +322,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 lastOptionSelected = "";
                 displayMenu("contato");
                 break;
-            case "6":
-                localStorage.removeItem("ultimoCPF");
-                cpf = "";
-                chatBox.innerHTML = "";
-                displayMessage("Olá! Sou o assistente virtual da Oliveira Transportes. Digite seu CPF, somente em números.", "bot-message");
-                break;
             default:
-                displayMessage("Opção inválida. Escolha de 1 a 6.", "bot-message");
+                displayMessage("Opção inválida. Escolha de 1 a 5.", "bot-message");
         }
     }
-
     function handleContextResponses(message) {
         const user = usersData[cpf];
         const isNumber = !isNaN(Number(message));
@@ -374,7 +375,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         lastOptionSelected = message;
 
-        if (currentContext === "embarque") {
+                if (currentContext === "embarque") {
             const responses = {
                 "1": `Local: ${user.embarqueLocal}\nResponsável: ${user.embarqueResponsavel}`,
                 "2": `Tipo de carga: ${user.tipoCarga}`,
@@ -385,9 +386,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         } else if (currentContext === "rota") {
             const responses = {
-                "1": "Instale o Waze ou acesse: https://www.waze.com/pt-BR/live-map/",
+                "1": "Instale o Waze, disponível para Android e IOS, ou acesse: https://www.waze.com/pt-BR/live-map/",
                 "2": "Paradas: " + user.paradasProgramadas,
-                "3": "Acesse a rota: https://www.waze.com/pt-BR/live-map/",
+                "3": "Instale o Waze, disponível para Android e IOS, ou acesse: https://www.waze.com/pt-BR/live-map/",
                 "4": "Digite suas observações:",
                 "5": "Digite os custos da viagem:"
             };
@@ -403,7 +404,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         } else if (currentContext === "contato") {
             const responses = {
-                "1": "Emergência: 192\nSOS Estradas:\nhttps://postocidadedemarilia.com.br/telefone-de-emergencia-das-rodovias-guia/",
+                "1": "Emergência 24h:\n192\nSOS Estradas:\nhttps://postocidadedemarilia.com.br/telefone-de-emergencia-das-rodovias-guia/",
                 "2": "Supervisor Otávio: (34) 9 9894-2493",
                 "3": "Ouvidoria: ouvidoria@oliveiratransportes.com.br"
             };
@@ -414,10 +415,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function displayMenu(contexto) {
         const menus = {
-            "embarque": `Embarque:\n1️⃣ Local e responsável\n2️⃣ Tipo de carga\n3️⃣ Enviar foto da carga\n4️⃣ KM inicial\n0️⃣ Voltar`,
-            "rota": `Rota:\n1️⃣ Abrir mapa\n2️⃣ Ver paradas\n3️⃣ Ver rota\n4️⃣ Registrar observações\n5️⃣ Registrar custos\n0️⃣ Voltar`,
-            "desembarque": `Desembarque:\n1️⃣ Local e responsável\n2️⃣ Enviar foto da carga\n3️⃣ KM final\n0️⃣ Voltar`,
-            "contato": `Contatos:\n1️⃣ Emergência\n2️⃣ Supervisor\n3️⃣ Ouvidoria\n0️⃣ Voltar`
+            "embarque": `Embarque:\n1️⃣ Local e responsável\n2️⃣ Tipo de carga\n3️⃣ Enviar foto da carga\n4️⃣ KM inicial\n0️⃣ Voltar ao menu principal`,
+            "rota": `Rota:\n1️⃣ Abrir mapa\n2️⃣ Ver paradas\n3️⃣ Ver rota\n4️⃣ Registrar observações\n5️⃣ Registrar custos\n0️⃣ Voltar ao menu principal`,
+            "desembarque": `Desembarque:\n1️⃣ Local e responsável\n2️⃣ Enviar foto da carga\n3️⃣ KM final\n0️⃣ Voltar ao menu principal`,
+            "contato": `Contatos:\n1️⃣ Emergência\n2️⃣ Supervisor\n3️⃣ Ouvidoria\n0️⃣ Voltar ao menu principal`
         };
         displayMessage(menus[contexto] || "⚠️ Menu não disponível.", "bot-message");
     }
